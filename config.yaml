@@ -1,0 +1,56 @@
+# Vosk Speech-to-Text Configuration
+
+# Operating Mode Preferences
+modes:
+  default_mode: 1  # 1=Transcribe, 2=Correct, 3=Full Workflow
+  remember_last_mode: true
+
+# Vosk Model Settings
+vosk:
+  model_path: "vosk-model-en-us-0.42-gigaspeech"
+  sample_rate: 16000
+  buffer_size: 8192
+
+# Output Settings
+output:
+  folder: "~/vosk_transcriptions"
+  default_format: "txt"  # txt, md, timestamped
+  auto_save_interval: 300  # seconds (5 minutes)
+
+# AI Correction Settings
+ai:
+  model: "mistral"  # mistral, llama3.2, etc.
+  temperature: 0.3  # 0.0-2.0 (lower = more conservative)
+  show_live: true  # Show AI processing in real-time
+  auto_start_ollama: true  # Start Ollama automatically when needed
+  auto_stop_ollama: false  # Stop Ollama when exiting
+
+# Correction Prompt Template
+correction_prompt: |
+  This is a speech-to-text transcription that may contain errors such as:
+  - Wrong homophones (their/there/they're, to/too/two)
+  - Phonetically similar words
+  - Missing or extra words
+  - Context errors
+
+  Please correct any errors while preserving the original meaning, style, and tone.
+  Only fix actual mistakes - don't rewrite or improve the text.
+
+  Text to correct:
+  {text}
+
+  Corrected text:
+
+# Logging Settings
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  file: "vosk_stt.log"
+  max_size_mb: 10
+  backup_count: 3
+
+# UI Settings
+ui:
+  show_word_count: true
+  show_timestamps: true
+  confirm_before_save: true
+  preview_length: 500  # characters
