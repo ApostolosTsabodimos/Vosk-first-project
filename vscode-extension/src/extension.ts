@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import { ChildProcess, spawn } from "child_process";
 import * as path from "path";
+import * as os from "os";
 import WebSocket from "ws";
 
 type State = "disconnected" | "ready" | "recording" | "transcribing";
@@ -79,10 +80,22 @@ function startBackend(): void {
     return;
   }
 
-  // Use the venv Python so all dependencies are available
-  const venvPython = path.join(backendPath, "backend", ".venv", "bin", "python");
+  // Use explicit pythonPath if configured, otherwise auto-detect venv
+  const configuredPython = vscode.workspace
+    .getConfiguration("voice-to-cursor")
+    .get<string>("pythonPath", "");
 
-  backendProcess = spawn(venvPython, ["-m", "backend.server"], {
+  let pythonBin: string;
+  if (configuredPython) {
+    pythonBin = configuredPython;
+  } else {
+    const isWindows = os.platform() === "win32";
+    const venvBinDir = isWindows ? "Scripts" : "bin";
+    const pythonExe = isWindows ? "python.exe" : "python";
+    pythonBin = path.join(backendPath, "backend", ".venv", venvBinDir, pythonExe);
+  }
+
+  backendProcess = spawn(pythonBin, ["-m", "backend.server"], {
     cwd: backendPath,
     stdio: "ignore",
     detached: false,
@@ -154,13 +167,19 @@ function connect(): void {
   });
 
   ws.on("message", (data: WebSocket.Data) => {
-    const msg = JSON.parse(data.toString());
+    let msg: Record<string, unknown>;
+    try {
+      msg = JSON.parse(data.toString());
+    } catch {
+      console.error("[voice-to-cursor] Received non-JSON message from backend");
+      return;
+    }
 
     if (msg.type === "status") {
       state = msg.state as State;
       updateStatusBar();
     } else if (msg.type === "result") {
-      insertText(msg.text);
+      insertText(msg.text as string);
       state = "ready";
       updateStatusBar();
     } else if (msg.type === "error") {

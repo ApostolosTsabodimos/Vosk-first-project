@@ -49,6 +49,11 @@
           "type": "string",
           "default": "",
           "description": "Absolute path to the vosk-project directory (e.g. /home/user/vosk-project). If empty, auto-start is disabled."
+        },
+        "voice-to-cursor.pythonPath": {
+          "type": "string",
+          "default": "",
+          "description": "Absolute path to the Python interpreter. Overrides automatic venv detection. Leave empty to use backend/.venv/bin/python (or Scripts/python.exe on Windows)."
         }
       }
     }

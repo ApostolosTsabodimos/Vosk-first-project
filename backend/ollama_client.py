@@ -1,6 +1,10 @@
 """Thin wrapper around the Ollama Python client."""
 
+import logging
+
 import ollama
+
+logger = logging.getLogger(__name__)
 
 
 def generate(prompt: str, system: str, model: str = "mistral", temperature: float = 0.3) -> str:
@@ -15,6 +19,9 @@ def generate(prompt: str, system: str, model: str = "mistral", temperature: floa
             options={"temperature": temperature},
         )
         return response.message.content or ""
-    except Exception as e:
-        print(f"[ollama] Error: {e}")
+    except (ollama.RequestError, ollama.ResponseError) as e:
+        logger.error("Ollama request failed: %s", e)
+        return ""
+    except ConnectionError as e:
+        logger.error("Cannot reach Ollama server: %s", e)
         return ""

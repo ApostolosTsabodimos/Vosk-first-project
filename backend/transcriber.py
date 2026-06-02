@@ -1,9 +1,12 @@
 """Faster-whisper transcription wrapper."""
 
+import logging
 import time
 
 import numpy as np
 from faster_whisper import WhisperModel
+
+logger = logging.getLogger(__name__)
 
 
 class WhisperTranscriber:
@@ -16,11 +19,11 @@ class WhisperTranscriber:
         device: str = "cpu",
     ) -> None:
         self.model_size = model_size
-        print(f"[transcriber] Loading whisper model '{model_size}' ({compute_type})...")
+        logger.info("Loading whisper model '%s' (%s)...", model_size, compute_type)
         t0 = time.perf_counter()
         self.model = WhisperModel(model_size, device=device, compute_type=compute_type)
         elapsed = time.perf_counter() - t0
-        print(f"[transcriber] Model loaded in {elapsed:.1f}s")
+        logger.info("Model loaded in %.1fs", elapsed)
 
     def transcribe(
         self,

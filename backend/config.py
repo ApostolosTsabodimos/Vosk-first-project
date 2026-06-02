@@ -22,6 +22,7 @@ DEFAULTS: dict[str, Any] = {
     },
     "audio": {
         "sample_rate": 16000,
+        "max_duration": 300,
     },
 }
 
