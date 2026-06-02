@@ -15,6 +15,14 @@
       {
         "command": "voice-to-cursor.toggle",
         "title": "Voice to Cursor: Toggle Dictation"
+      },
+      {
+        "command": "voice-to-cursor.cancel",
+        "title": "Voice to Cursor: Cancel Recording"
+      },
+      {
+        "command": "voice-to-cursor.reconnect",
+        "title": "Voice to Cursor: Reconnect to Backend"
       }
     ],
     "keybindings": [
@@ -31,6 +39,11 @@
           "type": "number",
           "default": 9876,
           "description": "WebSocket server port"
+        },
+        "voice-to-cursor.autoStart": {
+          "type": "boolean",
+          "default": true,
+          "description": "Auto-start the Python backend when it's not running"
         }
       }
     }

@@ -1,4 +1,6 @@
 import * as vscode from "vscode";
+import { ChildProcess, spawn } from "child_process";
+import * as path from "path";
 import WebSocket from "ws";
 
 type State = "disconnected" | "ready" | "recording" | "transcribing";
@@ -7,11 +9,21 @@ let ws: WebSocket | null = null;
 let state: State = "disconnected";
 let statusBar: vscode.StatusBarItem;
 let currentFileType = "";
+let backendProcess: ChildProcess | null = null;
+let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+let reconnectDelay = 1000;
+const MAX_RECONNECT_DELAY = 30000;
 
 function getPort(): number {
   return vscode.workspace
     .getConfiguration("voice-to-cursor")
     .get<number>("port", 9876);
+}
+
+function getAutoStart(): boolean {
+  return vscode.workspace
+    .getConfiguration("voice-to-cursor")
+    .get<boolean>("autoStart", true);
 }
 
 function updateStatusBar(): void {
@@ -38,9 +50,80 @@ function updateStatusBar(): void {
   statusBar.show();
 }
 
+function startBackend(): void {
+  if (backendProcess) {
+    return;
+  }
+
+  const workspaceFolders = vscode.workspace.workspaceFolders;
+  const cwd = workspaceFolders
+    ? workspaceFolders[0].uri.fsPath
+    : undefined;
+
+  // Look for the backend relative to the extension
+  const extensionPath = path.resolve(__dirname, "..", "..");
+  const backendDir = path.resolve(extensionPath);
+
+  backendProcess = spawn("python", ["-m", "backend.server"], {
+    cwd: backendDir,
+    stdio: "ignore",
+    detached: false,
+  });
+
+  backendProcess.on("exit", (code) => {
+    console.log(`[voice-to-cursor] Backend exited with code ${code}`);
+    backendProcess = null;
+    if (code !== 0 && code !== null) {
+      vscode.window
+        .showErrorMessage(
+          "Voice to Cursor: Backend crashed.",
+          "Restart Backend"
+        )
+        .then((action) => {
+          if (action === "Restart Backend") {
+            startBackend();
+            setTimeout(connect, 2000);
+          }
+        });
+    }
+  });
+
+  backendProcess.on("error", (err) => {
+    console.error(`[voice-to-cursor] Failed to start backend: ${err.message}`);
+    backendProcess = null;
+    vscode.window.showErrorMessage(
+      `Voice to Cursor: Failed to start backend: ${err.message}`
+    );
+  });
+}
+
+function stopBackend(): void {
+  if (backendProcess) {
+    backendProcess.kill("SIGTERM");
+    backendProcess = null;
+  }
+}
+
+function scheduleReconnect(): void {
+  if (reconnectTimer) {
+    return;
+  }
+  reconnectTimer = setTimeout(() => {
+    reconnectTimer = null;
+    connect();
+  }, reconnectDelay);
+  reconnectDelay = Math.min(reconnectDelay * 2, MAX_RECONNECT_DELAY);
+}
+
 function connect(): void {
   if (ws && ws.readyState === WebSocket.OPEN) {
     return;
+  }
+
+  // Clean up stale connection
+  if (ws) {
+    ws.removeAllListeners();
+    ws = null;
   }
 
   const port = getPort();
@@ -48,6 +131,7 @@ function connect(): void {
 
   ws.on("open", () => {
     state = "ready";
+    reconnectDelay = 1000; // Reset backoff on success
     updateStatusBar();
   });
 
@@ -70,15 +154,21 @@ function connect(): void {
     state = "disconnected";
     ws = null;
     updateStatusBar();
+    scheduleReconnect();
   });
 
   ws.on("error", () => {
     state = "disconnected";
     ws = null;
     updateStatusBar();
-    vscode.window.showErrorMessage(
-      "Voice to Cursor: Cannot connect to backend. Is the server running?"
-    );
+
+    // Try auto-starting the backend if enabled
+    if (getAutoStart() && !backendProcess) {
+      startBackend();
+      setTimeout(connect, 2000);
+    } else {
+      scheduleReconnect();
+    }
   });
 }
 
@@ -117,9 +207,14 @@ function toggle(): void {
 
   if (state === "ready") {
     const editor = vscode.window.activeTextEditor;
-    currentFileType = editor?.document.fileName
-      ? "." +
-        (editor.document.fileName.split(".").pop() ?? "")
+    if (!editor) {
+      vscode.window.showWarningMessage(
+        "Voice to Cursor: No active editor for dictation."
+      );
+      return;
+    }
+    currentFileType = editor.document.fileName
+      ? "." + (editor.document.fileName.split(".").pop() ?? "")
       : "";
     send({ command: "start", file_type: currentFileType });
   } else if (state === "recording") {
@@ -151,12 +246,27 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand("voice-to-cursor.cancel", cancel)
   );
 
+  context.subscriptions.push(
+    vscode.commands.registerCommand("voice-to-cursor.reconnect", () => {
+      reconnectDelay = 1000;
+      connect();
+      vscode.window.showInformationMessage(
+        "Voice to Cursor: Reconnecting..."
+      );
+    })
+  );
+
   connect();
 }
 
 export function deactivate(): void {
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer);
+    reconnectTimer = null;
+  }
   if (ws) {
     ws.close();
     ws = null;
   }
+  stopBackend();
 }
