@@ -8,7 +8,7 @@
     "vscode": "^1.80.0"
   },
   "categories": ["Other"],
-  "activationEvents": [],
+  "activationEvents": ["onStartupFinished"],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
@@ -44,6 +44,11 @@
           "type": "boolean",
           "default": true,
           "description": "Auto-start the Python backend when it's not running"
+        },
+        "voice-to-cursor.backendPath": {
+          "type": "string",
+          "default": "",
+          "description": "Absolute path to the vosk-project directory (e.g. /home/user/vosk-project). If empty, auto-start is disabled."
         }
       }
     }

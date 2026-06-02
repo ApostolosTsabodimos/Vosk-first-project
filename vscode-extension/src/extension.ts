@@ -50,22 +50,40 @@ function updateStatusBar(): void {
   statusBar.show();
 }
 
+function getBackendPath(): string {
+  return vscode.workspace
+    .getConfiguration("voice-to-cursor")
+    .get<string>("backendPath", "");
+}
+
 function startBackend(): void {
   if (backendProcess) {
     return;
   }
 
-  const workspaceFolders = vscode.workspace.workspaceFolders;
-  const cwd = workspaceFolders
-    ? workspaceFolders[0].uri.fsPath
-    : undefined;
+  const backendPath = getBackendPath();
+  if (!backendPath) {
+    vscode.window
+      .showErrorMessage(
+        "Voice to Cursor: Set \"voice-to-cursor.backendPath\" to your vosk-project directory to enable auto-start.",
+        "Open Settings"
+      )
+      .then((action) => {
+        if (action === "Open Settings") {
+          vscode.commands.executeCommand(
+            "workbench.action.openSettings",
+            "voice-to-cursor.backendPath"
+          );
+        }
+      });
+    return;
+  }
 
-  // Look for the backend relative to the extension
-  const extensionPath = path.resolve(__dirname, "..", "..");
-  const backendDir = path.resolve(extensionPath);
+  // Use the venv Python so all dependencies are available
+  const venvPython = path.join(backendPath, "backend", ".venv", "bin", "python");
 
-  backendProcess = spawn("python", ["-m", "backend.server"], {
-    cwd: backendDir,
+  backendProcess = spawn(venvPython, ["-m", "backend.server"], {
+    cwd: backendPath,
     stdio: "ignore",
     detached: false,
   });
