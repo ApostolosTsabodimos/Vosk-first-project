@@ -20,8 +20,9 @@ wheels/
 .installed.cfg
 *.egg
 
-# Virtual Environment
+# Virtual Environments
 venv/
+.venv/
 ENV/
 env/
 
@@ -37,19 +38,14 @@ env/
 logs/
 *.log
 
-# Vosk Models (too large for git)
+# Models (too large for git)
 vosk-model*/
+whisper-models/
 *.zip
 
 # Transcription outputs
 vosk_transcriptions/
-*.txt
-*.md
-*.html
-*.json
-*.srt
-*.pdf
-*.docx
+*.wav
 
 # Cache
 .cache/
@@ -58,10 +54,10 @@ vosk_transcriptions/
 # OS
 Thumbs.db
 
-# Config (might contain sensitive data)
-# Uncomment if you want to ignore config
-# config.yaml
+# Node
+node_modules/
+vscode-extension/*.js
+vscode-extension/out/
 
-# Test files
-test_*.wav
-*.wav
+# Claude Code local settings
+.claude/settings.local.json
