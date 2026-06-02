@@ -1,0 +1,16 @@
+whisper:
+  model: "small"
+  compute_type: "int8"
+  language: "en"
+  vad_filter: true
+
+server:
+  host: "localhost"
+  port: 9876
+
+ollama:
+  model: "mistral"
+  temperature: 0.3
+
+audio:
+  sample_rate: 16000
