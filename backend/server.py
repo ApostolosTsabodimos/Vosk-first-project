@@ -10,6 +10,7 @@ from websockets.asyncio.server import Server, ServerConnection
 
 from backend.audio import AudioRecorder
 from backend.config import load_config
+from backend.latex_processor import process as process_latex
 from backend.transcriber import WhisperTranscriber
 
 config = load_config()
@@ -34,6 +35,7 @@ async def handle_client(ws: ServerConnection) -> None:
     await send_json(ws, {"type": "status", "state": "ready"})
 
     recording = False
+    active_file_type = ""
 
     try:
         async for raw in ws:
@@ -50,6 +52,7 @@ async def handle_client(ws: ServerConnection) -> None:
                     await send_json(ws, {"type": "error", "message": "Already recording"})
                     continue
                 file_type = msg.get("file_type", "")
+                active_file_type = file_type
                 recorder = AudioRecorder(sample_rate=config["audio"]["sample_rate"])
                 recorder.start()
                 recording = True
@@ -62,7 +65,6 @@ async def handle_client(ws: ServerConnection) -> None:
                     continue
                 audio = recorder.stop()
                 recording = False
-                file_type = msg.get("file_type", "")
                 print(f"[server] Recording stopped, {len(audio)} samples")
 
                 await send_json(ws, {"type": "status", "state": "transcribing"})
@@ -77,6 +79,17 @@ async def handle_client(ws: ServerConnection) -> None:
                 )
 
                 print(f"[server] Transcription: {text[:80]}...")
+
+                # LaTeX post-processing for .tex files
+                text = await loop.run_in_executor(
+                    None,
+                    process_latex,
+                    text,
+                    active_file_type,
+                    config["ollama"]["model"],
+                    config["ollama"]["temperature"],
+                )
+
                 await send_json(ws, {"type": "result", "text": text})
                 await send_json(ws, {"type": "status", "state": "ready"})
 
