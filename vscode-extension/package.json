@@ -1,0 +1,50 @@
+{
+  "name": "voice-to-cursor",
+  "displayName": "Voice to Cursor",
+  "description": "Dictate text at the cursor position using faster-whisper",
+  "version": "0.1.0",
+  "publisher": "apostolos",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": ["Other"],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "voice-to-cursor.toggle",
+        "title": "Voice to Cursor: Toggle Dictation"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "voice-to-cursor.toggle",
+        "key": "ctrl+alt+d",
+        "when": "editorTextFocus"
+      }
+    ],
+    "configuration": {
+      "title": "Voice to Cursor",
+      "properties": {
+        "voice-to-cursor.port": {
+          "type": "number",
+          "default": 9876,
+          "description": "WebSocket server port"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "dependencies": {
+    "ws": "^8.0.0"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.0.0",
+    "@types/vscode": "^1.80.0",
+    "typescript": "^5.0.0"
+  }
+}
