@@ -1,0 +1,14 @@
+vosk>=0.3.45
+pyaudio>=0.2.13
+ollama>=0.1.0
+pyyaml>=6.0
+colorama>=0.4.6
+
+# Optional: For better performance monitoring
+psutil>=5.9.0
+
+# Optional: For PDF export
+# reportlab>=4.0.0
+
+# Optional: For DOCX export  
+# python-docx>=1.0.0
