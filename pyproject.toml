@@ -1,0 +1,31 @@
+[project]
+name = "voice-to-cursor"
+version = "0.1.0"
+description = "Speech-to-text dictation at the cursor position in VS Code"
+requires-python = ">=3.11"
+dependencies = [
+    "faster-whisper>=1.1.0",
+    "sounddevice>=0.5.0",
+    "numpy>=1.24.0",
+    "websockets>=13.0",
+    "ollama>=0.4.0",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24.0",
+    "ruff>=0.8.0",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]

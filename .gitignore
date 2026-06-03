@@ -58,6 +58,7 @@ Thumbs.db
 node_modules/
 vscode-extension/*.js
 vscode-extension/out/
+*.vsix
 
 # Claude Code local settings
 .claude/settings.local.json

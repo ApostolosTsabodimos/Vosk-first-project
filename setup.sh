@@ -10,13 +10,19 @@ echo
 # 1. Check system dependencies
 echo "[1/5] Checking system dependencies..."
 
-if ! command -v python &>/dev/null; then
-  echo "ERROR: python not found. Install Python 3.13+."
+if ! command -v python3 &>/dev/null && ! command -v python &>/dev/null; then
+  echo "ERROR: python3 not found. Install Python 3.11+."
   exit 1
 fi
 
-python_version=$(python -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
-echo "  Python: $python_version"
+# Prefer python3, fall back to python
+PYTHON_CMD="python3"
+if ! command -v python3 &>/dev/null; then
+  PYTHON_CMD="python"
+fi
+
+python_version=$($PYTHON_CMD -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
+echo "  Python: $python_version ($PYTHON_CMD)"
 
 if ! command -v node &>/dev/null; then
   echo "ERROR: node not found. Install Node.js 20+."
@@ -29,9 +35,27 @@ if ! command -v npm &>/dev/null; then
   exit 1
 fi
 
-# Check portaudio
-if ! pkg-config --exists portaudio-2.0 2>/dev/null; then
-  echo "  WARNING: portaudio not found. Install with: sudo pacman -S portaudio"
+# Check portaudio (required by sounddevice)
+if pkg-config --exists portaudio-2.0 2>/dev/null; then
+  echo "  portaudio: OK"
+else
+  echo "  WARNING: portaudio not found."
+  # Detect platform and suggest install command
+  if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    if command -v pacman &>/dev/null; then
+      echo "    Install with: sudo pacman -S portaudio"
+    elif command -v apt-get &>/dev/null; then
+      echo "    Install with: sudo apt-get install portaudio19-dev"
+    elif command -v dnf &>/dev/null; then
+      echo "    Install with: sudo dnf install portaudio-devel"
+    else
+      echo "    Install portaudio development headers for your distribution."
+    fi
+  elif [[ "$OSTYPE" == "darwin"* ]]; then
+    echo "    Install with: brew install portaudio"
+  else
+    echo "    Install portaudio development headers for your platform."
+  fi
 fi
 
 # Check Ollama (optional)
@@ -47,7 +71,7 @@ echo "[2/5] Setting up Python backend..."
 cd "$SCRIPT_DIR/backend"
 
 if [ ! -d ".venv" ]; then
-  python -m venv .venv
+  $PYTHON_CMD -m venv .venv
   echo "  Created virtual environment"
 fi
 
